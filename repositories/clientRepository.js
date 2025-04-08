@@ -22,18 +22,19 @@ const getClientsInRange = async (start, end) => {
       unsubscribed: false
     },
     offset: Number(start),
-    limit: Number(end) - Number(start) + 1
+    limit: Number(end) - Number(start) + 1,
+    raw: true
   });
 };
 
 /** ACTUALIZAR CLIENTES.
  * 
- * @param {*} clientId 
- * @param {*} updateFields : objeto.
+ * @param {*} updateOp : Campos a actualizar [Objeto].
+ * @param {*} whereOp : Where dinámico [Objeto].
  * @returns 
  */
-const updateClient = async (code, updateFields) => {
-  return await Client.update(updateFields, { where: { code_email: code } });
+const updateClient = async (updateOp, whereOp) => {
+  return await Client.update(updateOp, { where: whereOp });
 };
 
 /** OBTENER CLIENTES QUE FALLARON EL ENVÍO.

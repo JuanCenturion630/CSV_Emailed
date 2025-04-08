@@ -65,7 +65,7 @@ const processCSV = async (filePath) => {
  */
 const sendCampaign = async (start, end, onProgress) => {
   //Obtener clientes en el rango que aún no han recibido email y que no están desuscritos.
-  const clients = await clientRepository.getClientsInRange(start, end);
+  const clients = await clientRepository.getClientsInRange(start - 1, end);
   const totalClients = clients.length;
   let processedClients = 0;
 
@@ -77,6 +77,12 @@ const sendCampaign = async (start, end, onProgress) => {
     number_emails_received: 0, number_emails_failled: 0 
   });
 
+  //Verifica que la conexión con el servidor SMTP sea valida.
+  transporter.verify((error, success) => {
+    if (error) return { error: "El servidor SMTP no esta disponible: ", error };
+    else console.log('Servidor SMTP funcionando correctamente. Estado: '.green, success);
+  });
+
   //Enviar correos en lotes de 50 correos por ciclo.
   for (let i = 0; i < clients.length; i += 50) {
     const batch = clients.slice(i, i + 50);
@@ -84,11 +90,13 @@ const sendCampaign = async (start, end, onProgress) => {
       //Si ya se envió o el cliente está desuscrito, se omite:
       if (client.email_received || client.unsubscribed) return;
       
-      //Leer la plantilla HTML y reemplazar {{email_code}} por el código aletorio del correo de cliente. 
+      //Leer la plantilla HTML y reemplazar {{code}} por el código aletorio del correo de cliente. 
       const templatePath = path.join(__dirname, '../htmlTemplate/emailTemplate.html');
       let htmlContent = fs.readFileSync(templatePath, 'utf8');
       htmlContent = htmlContent.replace(/{{code}}/g, client.code_email);
       try {
+        
+        //Enviar correo.
         await transporter.sendMail({
           from: `"Inmser" <${process.env.NAME_EMAIL}>`,
           to: client.Email,
@@ -97,18 +105,20 @@ const sendCampaign = async (start, end, onProgress) => {
         });
 
         //Actualizar estado en "clients" y registrar en "emails_sent".
-        await clientRepository.updateClient(client.id, { email_received: true });
+        console.log("ID:".bgMagenta, client.id);
+        console.log("CODE EMAIL:".bgCyan, client.code_email);
+        await clientRepository.updateClient({ email_received: true }, { id: client.id });
         await emailSentRepository.createEmailSent({ 
           code_email: client.code_email, 
-          click_btn_start_free: 0, 
           sent: true 
         });
         emailsReceived++;
+
       } catch (error) {
         //Registrar error en el cliente:
+        console.log(client.id);
         await clientRepository.updateClient(
-          client.id, 
-          { sending_error: true, description_sending_error: error.message }
+          { sending_error: true, description_sending_error: error.message }, { id: client.id }
         );
 
         //Registrar envío fallido:

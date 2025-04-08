@@ -12,11 +12,11 @@ exports.createCampaign = async (data) => {
 /** ACTUALIZAR UNA CAMPAÑA.
  * 
  * @param {*} campaignId 
- * @param {*} updateFields 
+ * @param {*} updateOp : Parámetros a actualizar [Objeto].
  * @returns 
  */
-exports.updateCampaign = async (campaignId, updateFields) => {
-  return await Campaign.update(updateFields, { where: { id: campaignId } });
+exports.updateCampaign = async (campaignId, updateOp) => {
+  return await Campaign.update(updateOp, { where: { id: campaignId } });
 };
 
 /** OBTENER TODAS LAS CAMPAÑAS.
