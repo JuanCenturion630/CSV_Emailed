@@ -42,7 +42,7 @@ const updateClient = async (updateOp, whereOp) => {
  * @returns 
  */
 const getFailedClients = async () => {
-  return await Client.findAll({ where: { sending_error: true } });
+  return await Client.findAll({ where: { sending_error: true }, raw: true });
 };
 
 /** ELIMINAR TODOS LOS CLIENTES.

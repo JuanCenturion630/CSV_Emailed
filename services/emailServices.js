@@ -66,6 +66,7 @@ const processCSV = async (filePath) => {
 const sendCampaign = async (start, end, onProgress) => {
   //Obtener clientes en el rango que aún no han recibido email y que no están desuscritos.
   const clients = await clientRepository.getClientsInRange(start - 1, end);
+  console.log("Clientes:".bgGreen, clients);
   const totalClients = clients.length;
   let processedClients = 0;
 
@@ -118,7 +119,8 @@ const sendCampaign = async (start, end, onProgress) => {
         //Registrar error en el cliente:
         console.log(client.id);
         await clientRepository.updateClient(
-          { sending_error: true, description_sending_error: error.message }, { id: client.id }
+          { sending_error: true, description_sending_error: error.message }, 
+          { id: client.id }
         );
 
         //Registrar envío fallido:
@@ -178,24 +180,24 @@ const resendFailedEmails = async () => {
     htmlContent = htmlContent.replace(/{{code}}/g, client.code_email);
     try {
       await transporter.sendMail({
-        from: '"Inmser" <no-reply@inmser.com>',
+        from: `"Inmser" <${process.env.NAME_EMAIL}>`,
         to: client.Email,
-        subject: 'Campaña de Inmser - Reenvío',
+        subject: 'Campaña de Inmser',
         html: htmlContent
       });
       
       //Actualiza los clientes fallidos, ahora con envíos exitosos.
-      await clientRepository.updateClient(
-        client.id, 
-        { email_received: true, sending_error: false, description_sending_error: null }
+      await clientRepository.updateClient( 
+        { email_received: true, sending_error: false, description_sending_error: null },
+        { id: client.id }
       );
       await emailSentRepository.updateEmailSentByClient(client.code_email, { sent: true });
       emailsReceived++;
     } catch (error) {
       //Actualiza los clientes fallidos con los nuevos errores durante el reenvío.
       await clientRepository.updateClient(
-        client.id, 
-        { sending_error: true, description_sending_error: error.message }
+        { sending_error: true, description_sending_error: error.message },
+        { id: client.id }
       );
       await emailSentRepository.updateEmailSentByClient(client.code_email, { sent: false });
       emailsFailed++;
@@ -230,7 +232,7 @@ const getClientsWithClicks = async () => {
  * @param {*} clientId 
  */
 const unsubscribeClient = async (code) => {
-  await clientRepository.updateClient(code, { unsubscribed: true });
+  await clientRepository.updateClient({ unsubscribed: true }, { code_email: code });
 };
 
 /** OBTENER TODOS LOS CLIENTES DESUSCRIPTOS.

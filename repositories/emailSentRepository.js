@@ -13,12 +13,12 @@ exports.createEmailSent = async (data) => {
 
 /** ACTUALIZAR REGISTRO DE EMAILS ENVIADOS.
  * 
- * @param clientId 
- * @param updateFields 
+ * @param code_email 
+ * @param updateOp 
  * @returns 
  */
-exports.updateEmailSentByClient = async (code_email, updateFields) => {
-  return await EmailSent.update(updateFields, { where: { code_email } });
+exports.updateEmailSentByClient = async (code_email, updateOp) => {
+  return await EmailSent.update(updateOp, { where: { code_email: code_email } });
 };
 
 /** REGISTRAR EL INCREMENTO DE CLICKS EN EL BOTÓN "COMENZAR GRATIS".
