@@ -33,7 +33,7 @@ const processCSV = async (filePath) => {
   return new Promise((resolve, reject) => {
     const clients = [];
     fs.createReadStream(filePath)
-    .pipe(csv({ separator: ';' })) //Cambiar por ',' en caso de ser necesario.
+    .pipe(csv({ separator: ',' })) //Cambiar por ',' en caso de ser necesario.
     .on('data', (row) => {
       //Ademá de los campos en el CSV, se crean campos adicionales.
       row.code_email = Math.random().toString(36).substring(2, 10); //Generar código aleatorio para el email.
@@ -46,10 +46,6 @@ const processCSV = async (filePath) => {
     .on('end', async () => {
       try {
         //Se crea el registroe en base de datos.
-        
-        //await clientRepository.bulkCreateClients(clients);
-        //resolve(); //Promesa terminada.
-        
         const createdClients = await clientRepository.bulkCreateClients(clients);
         resolve(createdClients); //Retornar los datos insertados.
       } catch (error) {
