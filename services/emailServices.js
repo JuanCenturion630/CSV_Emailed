@@ -56,7 +56,7 @@ const processCSV = async (filePath) => {
   });
 };
 
-/** ENVIAR CAMPAÑA (LOTES DE 50 MENSAJES).
+/** ENVIAR CAMPAÑA (LOTES DE 10 MENSAJES).
  * 
  * Si eliges de 25 a 700, le enviará emails a todos los usuarios entre ese rango.
  * @param {*} start : Índice del usuario que inicia la campaña.
@@ -84,9 +84,9 @@ const sendCampaign = async (start, end, onProgress) => {
     else console.log('Servidor SMTP funcionando correctamente. Estado: '.green, success);
   });
 
-  //Enviar correos en lotes de 50 correos por ciclo.
-  for (let i = 0; i < clients.length; i += 50) {
-    const batch = clients.slice(i, i + 50);
+  //Enviar correos en lotes de 10 correos por ciclo.
+  for (let i = 0; i < clients.length; i += 10) {
+    const batch = clients.slice(i, i + 10);
     const send = batch.map(async (client) => {
       //Si ya se envió o el cliente está desuscrito, se omite:
       if (client.email_received || client.unsubscribed) return;
