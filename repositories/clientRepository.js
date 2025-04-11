@@ -25,6 +25,7 @@ const getClientsInRange = async (start, end) => {
         [Op.between]: [Number(start), Number(end)] //Traer solo IDs dentro del rango.
       }
     },
+    order: [['id', 'ASC']],
     raw: true
   });
 };

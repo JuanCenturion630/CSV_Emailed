@@ -32,27 +32,36 @@ const transporter = nodemailer.createTransport({
 const processCSV = async (filePath) => {
   return new Promise((resolve, reject) => {
     const clients = [];
+    const seenEmails = new Set(); //Para controlar correos ya procesados.
+
     fs.createReadStream(filePath)
-    .pipe(csv({ separator: ',' })) //Cambiar por ',' en caso de ser necesario.
+    .pipe(csv({ separator: ',' })) //Poner ";" en caso de ser necesario.
     .on('data', (row) => {
-      //Ademá de los campos en el CSV, se crean campos adicionales.
-      row.code_email = Math.random().toString(36).substring(2, 10); //Generar código aleatorio para el email.
-      row.email_received = false;
-      row.sending_error = false;
-      row.description_sending_error = null;
-      row.unsubscribed = false;
-      clients.push(row); //Se guardan los datos en el vector.
+      const email = row.Email?.trim().toLowerCase(); //Normalizar los correos.
+      if (email && !seenEmails.has(email)) { //Verificamos si el correo ya fue procesado.
+        seenEmails.add(email); //Se usará para evitar los clientes repetidos.
+        row.Email = email;
+        row.code_email = Math.random().toString(36).substring(2, 10);
+        row.email_received = false;
+        row.sending_error = false;
+        row.description_sending_error = null;
+        row.unsubscribed = false;
+        clients.push(row); //Guardar clientes que se subirán a la base de datos.
+      }
+      //Si está duplicado, se ignora.
     })
     .on('end', async () => {
       try {
-        //Se crea el registroe en base de datos.
         const createdClients = await clientRepository.bulkCreateClients(clients);
-        resolve(createdClients); //Retornar los datos insertados.
+        resolve(createdClients);
       } catch (error) {
-        reject(error); //Promesa rechazada.
+        reject(error);
       }
     })
-    .on('error', reject);
+    .on('error', (error) => {
+      console.error('Error al procesar el CSV:'.bgRed, error);
+      reject(error);
+    });
   });
 };
 

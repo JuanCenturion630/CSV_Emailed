@@ -32,12 +32,12 @@ const sendCampaign = async (req, res) => {
 
     const { start, end } = req.body; //Rangos: por ejemplo, cliente 1 a 500.
     const result = await emailService.sendCampaign(start, end, (progress) => {
-      res.write(`Progreso: ${JSON.stringify({ progress })}\n\n`);
+      res.write(`Progreso: ${JSON.stringify({ progress })} %\n\n`);
     });
-    res.write(`Progreso: ${JSON.stringify({ result })}\n\n`);
+    res.write(`Progreso: ${JSON.stringify({ result })} %\n\n`);
     res.end();
   } catch (error) {
-    res.write(`Progreso: ${JSON.stringify({ error: error.message })}\n\n`);
+    res.write(`Progreso: ${JSON.stringify({ error: error.message })} %\n\n`);
     res.end();
   }
 };
