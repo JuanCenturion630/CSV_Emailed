@@ -31,37 +31,75 @@ const transporter = nodemailer.createTransport({
  */
 const processCSV = async (filePath) => {
   return new Promise((resolve, reject) => {
-    const clients = [];
-    const seenEmails = new Set(); //Para controlar correos ya procesados.
+    const clients = []; // Clientes únicos listos para validación en BD.
+    const seenEmails = new Set(); // Correos únicos en el CSV.
+    const rawEmails = new Set(); // Todos los correos encontrados (duplicados incluidos).
+    const duplicatedInCSV = new Set(); // Correos duplicados detectados en el mismo CSV.
+    let totalRowsInCSV = 0; // Total de filas en el CSV (sin importar si están bien o mal)
 
     fs.createReadStream(filePath)
-    .pipe(csv({ separator: ',' })) //Poner ";" en caso de ser necesario.
-    .on('data', (row) => {
-      const email = row.Email?.trim().toLowerCase(); //Normalizar los correos.
-      if (email && !seenEmails.has(email)) { //Verificamos si el correo ya fue procesado.
-        seenEmails.add(email); //Se usará para evitar los clientes repetidos.
-        row.Email = email;
-        row.code_email = Math.random().toString(36).substring(2, 10);
-        row.email_received = false;
-        row.sending_error = false;
-        row.description_sending_error = null;
-        row.unsubscribed = false;
-        clients.push(row); //Guardar clientes que se subirán a la base de datos.
-      }
-      //Si está duplicado, se ignora.
-    })
-    .on('end', async () => {
-      try {
-        const createdClients = await clientRepository.bulkCreateClients(clients);
-        resolve(createdClients);
-      } catch (error) {
+      .pipe(csv({ separator: ',' })) // Cambiar a ';' si es necesario.
+      .on('data', (row) => {
+        totalRowsInCSV++; // Contamos cada fila del CSV, válida o no
+        const email = row.Email?.trim().toLowerCase(); // Normalizamos el correo.
+
+        if (email) {
+          rawEmails.add(email);
+
+          if (seenEmails.has(email)) {
+            duplicatedInCSV.add(email); // Guardamos como duplicado interno
+            return; // Ignoramos duplicados internos
+          }
+
+          seenEmails.add(email);
+
+          // Campos adicionales
+          row.Email = email;
+          row.code_email = Math.random().toString(36).substring(2, 10);
+          row.email_received = false;
+          row.sending_error = false;
+          row.description_sending_error = null;
+          row.unsubscribed = false;
+
+          clients.push(row);
+        }
+      })
+      .on('end', async () => {
+        try {
+          // Correos únicos que pasaron filtro del CSV
+          const uniqueCSVEmails = clients.map(c => c.Email);
+
+          // Buscar en la base de datos los correos ya existentes
+          const existingClients = await clientRepository.findByEmails(uniqueCSVEmails);
+          const existingEmails = new Set(existingClients.map(c => c.Email.toLowerCase()));
+
+          // Filtrar los clientes que ya existen en la BD
+          const filteredClients = clients.filter(client => !existingEmails.has(client.Email));
+
+          // Insertar los clientes nuevos
+          const createdClients = await clientRepository.bulkCreateClients(filteredClients);
+
+          // Resumen
+          const summary = {
+            totalRowsInCSV: totalRowsInCSV,
+            duplicatedEmailsInCSV: duplicatedInCSV.size,
+            existingEmailsInDB: existingEmails.size,
+            insertedClients: createdClients.length
+          };
+
+          console.log('Resumen del proceso CSV:'.bgGreen);
+          console.log(summary);
+
+          resolve({ createdClients, summary });
+        } catch (error) {
+          console.error('Error en el paso final del CSV:'.bgRed, error);
+          reject(error);
+        }
+      })
+      .on('error', (error) => {
+        console.error('Error al procesar el CSV:'.bgRed, error);
         reject(error);
-      }
-    })
-    .on('error', (error) => {
-      console.error('Error al procesar el CSV:'.bgRed, error);
-      reject(error);
-    });
+      });
   });
 };
 

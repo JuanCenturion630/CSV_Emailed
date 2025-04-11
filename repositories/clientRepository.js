@@ -10,6 +10,23 @@ const bulkCreateClients = async (clients) => {
   return await Client.bulkCreate(clients);
 };
 
+/** ENCONTRAR TODOS LOS USUARIOS POR EMAIL.
+ * 
+ * @param {*} emailList : Objeto.
+ * @returns 
+ */
+const findByEmails = async (emailList) => {
+  return await Client.findAll({
+    where: {
+      email: {
+        [Op.in]: emailList
+      }
+    },
+    attributes: ['email'],
+    raw: true
+  });
+};
+
 /** OBTENER CLIENTES EN UN RANGO.
  * 
  * @param {*} start 
@@ -93,6 +110,7 @@ const getClienUnsubscribe = async () => {
 
 module.exports = {
   bulkCreateClients,
+  findByEmails,
   getClientsInRange,
   updateClient,
   getFailedClients,
