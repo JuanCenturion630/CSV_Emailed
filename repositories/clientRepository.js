@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const { Client } = require('../models/client');
 
 /** CREAR CLIENTES EN BASE DE DATOS.
@@ -19,10 +20,11 @@ const getClientsInRange = async (start, end) => {
   return await Client.findAll({
     where: {
       email_received: false,
-      unsubscribed: false
+      unsubscribed: false,
+      id: {
+        [Op.between]: [Number(start), Number(end)] //Traer solo IDs dentro del rango.
+      }
     },
-    offset: Number(start),
-    limit: Number(end) - Number(start) + 1,
     raw: true
   });
 };

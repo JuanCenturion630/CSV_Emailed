@@ -65,7 +65,7 @@ const processCSV = async (filePath) => {
  */
 const sendCampaign = async (start, end, onProgress) => {
   //Obtener clientes en el rango que aún no han recibido email y que no están desuscritos.
-  const clients = await clientRepository.getClientsInRange(start - 1, end);
+  const clients = await clientRepository.getClientsInRange(start, end);
   console.log("Clientes:".bgGreen, clients);
   const totalClients = clients.length;
   let processedClients = 0;
